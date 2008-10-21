@@ -10,7 +10,7 @@ Author URI: http://launchpad.net/~stuartmetcalfe
 
 add_action('admin_menu', 'openid_teams_admin_panels');
 add_filter('openid_auth_request_extensions', 'openid_teams_add_extenstion', 10, 2);
-add_filter('openid_user_data', 'openid_teams_get_user_data', 10, 2);
+add_action('openid_finish_auth', 'openid_teams_finish_auth');
 
 /**
  *
@@ -33,18 +33,21 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
 }
 
 /**
- *
+ * On a successful openid response, get the teams data and assign it to local roles
+ * 
+ * @param string $identity_url
+ * @todo Assign local roles
  */
-function openid_teams_get_user_data($data, $identity_url) {
+function openid_teams_finish_auth($identity_url) {
   set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR . get_include_path());
   require_once 'teams-extension.php';
   restore_include_path();
   
   $response = openid_response();
-	$teams_resp = new Auth_OpenID_TeamsResponse($teams_resp);
-	//echo '<pre>';print_r($teams_resp);exit;
-
-	return $data;
+  if ($response->status == Auth_OpenID_SUCCESS) {
+    $teams_resp = new Auth_OpenID_TeamsResponse($response);
+    $teams = $teams_resp->getTeams();
+  }
 }
 
 ?>
