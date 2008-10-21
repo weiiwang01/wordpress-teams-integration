@@ -9,22 +9,30 @@ Author URI: http://launchpad.net/~stuartmetcalfe
 */
 
 add_action('admin_menu', 'openid_teams_admin_panels');
-add_filter('openid_auth_request_extensions', 'openid_teams_add_extenstion', 10, 2);
+add_filter('openid_auth_request_extensions',
+           'openid_teams_add_extenstion', 10, 2);
 add_action('openid_finish_auth', 'openid_teams_finish_auth');
 
 /**
- *
+ * Add the teams admin page to the main admin menu
  */
 function openid_teams_admin_panels() {
 	// trusted servers page
-	$hookname = add_options_page(__('OpenID teams', 'openid-teams'), __('OpenID Teams', 'openid-teams'), 8, 'openid-teams', 'openid_teams_page' );
+	$hookname = add_options_page(__('OpenID teams', 'openid-teams'),
+	                             __('OpenID Teams', 'openid-teams'), 8,
+	                              'openid-teams', 'openid_teams_page' );
 }
 
 /**
+ * Add the teams request to the openid request
  *
+ * @param array $extensions The existing extensions to add to
+ * @param object $auth_request The openid request object
+ * @return array The amended extensions array to pass on
  */
 function openid_teams_add_extenstion($extensions, $auth_request) {
-  set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR . get_include_path());
+  set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR .
+                   get_include_path());
   require_once 'teams-extension.php';
   restore_include_path();
   $teams = array('canonical');
@@ -33,13 +41,15 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
 }
 
 /**
- * On a successful openid response, get the teams data and assign it to local roles
+ * On a successful openid response, get the teams data and assign it to
+ * local roles
  * 
  * @param string $identity_url
  * @todo Assign local roles
  */
 function openid_teams_finish_auth($identity_url) {
-  set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR . get_include_path());
+  set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR .
+                   get_include_path());
   require_once 'teams-extension.php';
   restore_include_path();
   
