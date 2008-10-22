@@ -224,8 +224,63 @@ function openid_teams_finish_auth($identity_url) {
   $response = openid_response();
   if ($response->status == Auth_OpenID_SUCCESS) {
     $teams_resp = new Auth_OpenID_TeamsResponse($response);
-    $teams = $teams_resp->getTeams();
+    $raw_teams  = $teams_resp->getTeams();
+    $endpoint   = $response->endpoint;
+    $teams      = get_approved_team_mappings($raw_teams, $endpoint);
+    $all_teams  = openid_teams_get_trust_list();
+    // $teams = array(1); // For testing
+    foreach ($teams as $id) {
+      $user = wp_get_current_user();
+      $user->add_role($all_teams[$id]->role);
+    }
   }
+}
+
+/**
+ * Given a list of teams and a server, returns the map ids which are approved
+ *
+ * @param array|string $teams A comma separated string or an array of teams
+ * @param string $server The server making the request
+ * @return array An array of approved ids from the openid_teams_roles table
+ */
+function get_approved_team_mappings($teams, $server) {
+  if (!is_array($teams)) {
+    $teams = explode(',', $teams);
+  }
+  $approved = array();
+  foreach ($teams as $team) {
+    $map_ids = get_team_role_ids($team, $server);
+    foreach ($map_ids as $map_id) {
+      $approved[] = $map_id;
+    }
+  }
+  return $approved;
+}
+
+/**
+ * Given a team and a server, returns the team/role map ids
+ *
+ * @param string $team
+ * @param string $server
+ * @return array an array of integers (map ids)
+ */
+function get_team_role_ids($team, $server) {
+  static $mapped_roles;
+  $map_ids = array();
+  if (!is_array($mapped_roles)) {
+    $mapped_roles = array();
+    foreach (openid_teams_get_trust_list() as $map) {
+      $mapped_roles[$map->team][] = $map;
+    }
+  }
+  if (isset($mapped_roles[$team])) {
+    foreach ($mapped_roles[$team] as $map) {
+      if (empty($map->server) || true === fnmatch($map->server, $server)) {
+        $map_ids[] = $map->id;
+      }
+    }
+  }
+  return $map_ids;
 }
 
 ?>
