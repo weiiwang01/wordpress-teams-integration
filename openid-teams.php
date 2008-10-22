@@ -24,6 +24,174 @@ function openid_teams_admin_panels() {
 }
 
 /**
+ * Add a trusted role->server map to the list
+ *
+ * @param string $team The team from the remote server
+ * @param string $role The local role to map to the team
+ * @param string $server The server url to match against the openid provider's endpoint
+ */
+function openid_add_trust_map($team, $role, $server) {
+	$list = openid_teams_get_trust_list();
+	$new_index = (sizeof($list) > 0) ? max(array_keys($list)) + 1 : 1;
+	$new_item->id = $new_index;
+	$new_item->team = $team;
+	$new_item->role = $role;
+	$new_item->server = $server;
+	$list[$new_index] = $new_item;
+	openid_teams_update_trust_list($list);
+}
+
+/**
+ * Save an amended array of trusted role->server maps
+ *
+ * See openid_teams_get_trust_list() for format
+ * 
+ * @param array $list
+ */
+function openid_teams_update_trust_list($list) {
+	if (is_array($list)) {
+		update_option('openid_teams_trust_list', $list);
+	}
+}
+
+/**
+ * Get the list of trusted role->server maps
+ *
+ * Format is:
+ * array(
+ *   [1] => stdObject(
+ *     -> id       - The index of the server (same as array index)
+ *     -> team     - The remote team
+ *     -> role     - The local role name
+ *     -> server   - The server url to match against the openid provider's endpoint
+ *   ),
+ *   [2] => stdObject(
+ * 		... etc ...
+ * )
+ *
+ * @return array
+ */
+function openid_teams_get_trust_list() {
+	$list = get_option('openid_teams_trust_list');
+	if ($list === false) {
+		$list = array();
+		openid_teams_update_trust_list($list);
+	}
+	return $list;
+}
+
+/**
+ *
+ */
+function openid_teams_process_teams_form() {
+  if (isset($_POST['teams_submit'])) {
+		check_admin_referer('openid-teams_update');
+    // Update the existing team->server maps first
+    $list = openid_teams_get_trust_list();
+    $max = (int) $_POST['item_count'];
+    for ($i = 0; $i < $max; $i ++) {
+      $id    = (isset($_POST['tid_'.$i])) ? $_POST['tid_'.$i] : false;
+      $team  = (isset($_POST['team_'.$i])) ? $_POST['team_'.$i] : '';
+      $role  = (isset($_POST['role_'.$i])) ? $_POST['role_'.$i] : '';
+      $trust = (isset($_POST['trust_'.$i])) ? $_POST['trust_'.$i] : '';
+      if ($id && isset($list[$id])) {
+        if (isset($_POST['delete_'.$i])) {
+          unset($list[$id]);
+        } elseif (!empty($team) && !empty($role) && is_numeric($trust)) {
+          $list[$id]->team = $team;
+          $list[$id]->role = $role;
+          $list[$id]->server = $trust;
+        }
+      } elseif ($i+1 == $max) { // New items should always be last
+        openid_teams_update_trust_list($list);
+        if (!empty($team) && !empty($role) && is_numeric($trust)) {
+          openid_add_trust_map($team, $role, $trust);
+        }
+      }
+    }
+  }
+}
+
+/**
+ *
+ */
+function openid_teams_page() {
+  openid_teams_process_teams_form();
+  $all_trusted = openid_teams_get_trust_list();
+  $servers = array('-1' => __('Any server', 'openid-teams'));
+  $roles = new WP_Roles();
+  $i = 0;
+  ?>
+	<div class="wrap">
+		<form method="post">
+			<h2><?php _e('OpenID Teams', 'openid-teams') ?></h2>
+			<table width="100%">
+        <tr>
+          <th style="text-align:left;"><?php _e('Team', 'openid-teams') ?></th>
+          <th style="text-align:left;"><?php _e('Role', 'openid-teams') ?></th>
+          <th style="text-align:left;"><?php _e('Trust', 'openid-teams') ?></th>
+          <th style="text-align:left;"><?php _e('Delete', 'openid-teams') ?></th>
+        </tr>
+        <?php foreach($all_trusted as $trusted) { ?>
+          <tr>
+            <td>
+              <input type="hidden" name="tid_<?php echo $i ?>" value="<?php echo $trusted->id ?>"  />
+              <input type="text" maxlength="128" name="team_<?php echo $i ?>"  size="20" value="<?php echo htmlentities($trusted->team) ?>" />
+            </td>
+            <td>
+              <select name="role_<?php echo $i ?>">
+                <?php foreach ($roles->get_names() as $key => $val) {
+                  list($val, ) = explode('|', $val, 2);
+                  $selected = ($trusted->role == $key) ? ' selected="selected"' : '';
+                  printf('<option value="%s"%s>%s</option>', $key, $selected, $val);
+                } ?>
+              </select>
+            </td>
+            <td>
+              <select name="trust_<?php echo $i ?>">
+                <?php foreach ($servers as $id => $server) {
+                  $selected = ($trusted->server == $id) ? ' selected="selected"' : '';
+                  printf('<option value="%d"%s>%s</option>', $id, $selected, $server);
+                } ?>
+              </select>
+            </td>
+            <td>
+              <input type="checkbox" name="delete_<?php echo $i ?>" value="1" />
+            </td>
+          </tr>
+        <?php $i++; } ?>
+        <tr>
+          <td>
+            <input type="text" maxlength="128" name="team_<?php echo $i ?>"  size="20" value="" />
+          </td>
+          <td>
+            <select name="role_<?php echo $i ?>">
+              <?php foreach ($roles->get_names() as $key => $val) {
+                list($val, ) = explode('|', $val, 2);
+                $selected = '';
+                printf('<option value="%s"%s>%s</option>', $key, $selected, $val);
+              } ?>
+            </select>
+          </td>
+          <td>
+            <select name="trust_<?php echo $i ?>">
+              <?php foreach ($servers as $id => $server) {
+                printf('<option value="%d">%s</option>', $id, $server);
+              } ?>
+            </select>
+          </td>
+          <td><br /></td>
+        </tr>
+      </table>
+      <input type="hidden" name="item_count" value="<?php echo $i+1 ?>"  />
+			<?php wp_nonce_field('openid-teams_update'); ?>
+      <input type="submit" name="teams_submit" value="<?php _e('Save changes') ?>" />
+    </form>
+  </div>
+  <?php
+}
+
+/**
  * Add the teams request to the openid request
  *
  * @param array $extensions The existing extensions to add to
