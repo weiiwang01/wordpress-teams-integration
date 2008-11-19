@@ -12,7 +12,8 @@ add_action('admin_menu', 'openid_teams_admin_panels');
 add_filter('openid_auth_request_extensions',
            'openid_teams_add_extenstion', 10, 2);
 add_action('openid_finish_auth', 'openid_teams_finish_auth');
-
+add_action('wp_login', 'openid_teams_assign_on_login');
+add_action('wp_logout', 'openid_teams_assign_on_logout');
 /**
  * Add the teams admin page to the main admin menu
  */
@@ -33,6 +34,7 @@ function openid_teams_admin_panels() {
 function openid_add_trust_map($team, $role, $server) {
 	$list = openid_teams_get_trust_list();
 	$new_index = (sizeof($list) > 0) ? max(array_keys($list)) + 1 : 1;
+	$new_item = null;
 	$new_item->id = $new_index;
 	$new_item->team = $team;
 	$new_item->role = $role;
@@ -209,13 +211,13 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
 }
 
 /**
- * On a successful openid response, get the teams data and assign it to
- * local roles
+ * On a successful openid response, get the teams data and generate a list of
+ * approved team mappings
  * 
  * @param string $identity_url
- * @todo Assign local roles
  */
 function openid_teams_finish_auth($identity_url) {
+  global $openid_teams;
   set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR .
                    get_include_path());
   require_once 'teams-extension.php';
@@ -223,17 +225,62 @@ function openid_teams_finish_auth($identity_url) {
   
   $response = openid_response();
   if ($response->status == Auth_OpenID_SUCCESS) {
-    $teams_resp = new Auth_OpenID_TeamsResponse($response);
-    $raw_teams  = $teams_resp->getTeams();
-    $endpoint   = $response->endpoint;
-    $teams      = get_approved_team_mappings($raw_teams, $endpoint);
-    $all_teams  = openid_teams_get_trust_list();
-    // $teams = array(1); // For testing
-    foreach ($teams as $id) {
-      $user = wp_get_current_user();
-      $user->add_role($all_teams[$id]->role);
+    $teams_resp   = new Auth_OpenID_TeamsResponse($response);
+    $raw_teams    = $teams_resp->getTeams();
+    $endpoint     = $response->endpoint;
+    $openid_teams = get_approved_team_mappings($raw_teams, $endpoint);
+  }
+}
+
+/**
+ * Once the user has been created, assign the actual mapped team roles
+ *
+ * @param string $username
+ * @param string $password (Default '')
+ */
+function openid_teams_assign_on_login($username, $password='') {
+  global $openid_teams;
+  $user = restore_old_roles(new WP_User($username));
+  if ($openid_teams) {
+  	$existing_roles = array_keys($user->caps);
+  	$openid_assigned_roles = array();
+    $all_teams = openid_teams_get_trust_list();
+    foreach ($openid_teams as $id) {
+      $role = $all_teams[$id]->role;
+      if (!in_array($role, $existing_roles) && !isset($user->caps[$role])) {
+      	$user->add_role($role);
+      	$openid_assigned_roles[] = $role;
+      }
+    }
+    update_usermeta($user->ID, 'openid_assigned_roles', $openid_assigned_roles);
+  }
+}
+
+/**
+ * Clear the user's roles assigned by openid teams on logout if possible
+ * 
+ * It isn't guaranteed that users will use the logout button but this will
+ * remove the roles from the admin interface if they do.
+ */
+function openid_teams_assign_on_logout() {
+  restore_old_roles(wp_get_current_user());
+}
+
+/**
+ * Remove roles from the user which were assigned on last login by openid teams
+ * 
+ * @param object $user
+ * @return object The amended $user object
+ */
+function restore_old_roles($user) {
+  $old_roles = get_usermeta($user->ID, 'openid_assigned_roles');
+  if ($old_roles) {
+    foreach ($old_roles as $role) {
+      $user->remove_cap($role);
     }
   }
+  update_usermeta($user->ID, 'openid_assigned_roles', null);
+  return $user;
 }
 
 /**
@@ -275,7 +322,7 @@ function get_team_role_ids($team, $server) {
   }
   if (isset($mapped_roles[$team])) {
     foreach ($mapped_roles[$team] as $map) {
-      if (empty($map->server) || true === fnmatch($map->server, $server)) {
+      if ($map->server == -1 || true === fnmatch($map->server, $server->server_url)) {
         $map_ids[] = $map->id;
       }
     }
