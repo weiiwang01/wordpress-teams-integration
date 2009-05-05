@@ -47,7 +47,7 @@ function openid_add_trust_map($team, $role, $server) {
  * Save an amended array of trusted role->server maps
  *
  * See openid_teams_get_trust_list() for format
- * 
+ *
  * @param array $list
  */
 function openid_teams_update_trust_list($list) {
@@ -205,15 +205,48 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
                    get_include_path());
   require_once 'teams-extension.php';
   restore_include_path();
-  $teams = array('canonical');
+  $teams = get_teams_for_endpoint($auth_request->endpoint->server_url);
   $extensions[] = new Auth_OpenID_TeamsRequest($teams);
 	return $extensions;
 }
 
 /**
+ * Get a list of all teams the site should ask about for a give endpoint
+ *
+ * @param string $endpoint The URL of the OpenID endpoint
+ * @return array - 1-dimensional array of team names (strings)
+ */
+function get_teams_for_endpoint($endpoint) {
+  $all_teams = get_all_local_teams();
+  $relevant_team_ids = get_approved_team_mappings($all_teams, $endpoint);
+  $relevant_teams = array();
+  $all_teams_raw = openid_teams_get_trust_list();
+  foreach ($all_teams_raw as $team) {
+    if (in_array($team->id, $relevant_team_ids)) {
+      $relevant_teams[] = $team->team;
+    }
+  }
+  return array_unique($relevant_teams);
+}
+
+/**
+ * Get an array of all teams this site is interested in
+ *
+ * @return array - 1-dimensional array of team names (strings)
+ */
+function get_all_local_teams() {
+  $all_teams_raw = openid_teams_get_trust_list();
+  $all_teams = array();
+  foreach ($all_teams_raw as $team) {
+    $all_teams[] = $team->team;
+  }
+  return array_unique($all_teams);
+}
+
+/**
  * On a successful openid response, get the teams data and generate a list of
  * approved team mappings
- * 
+ *
  * @param string $identity_url
  */
 function openid_teams_finish_auth($identity_url) {
@@ -222,7 +255,7 @@ function openid_teams_finish_auth($identity_url) {
                    get_include_path());
   require_once 'teams-extension.php';
   restore_include_path();
-  
+
   $response = openid_response();
   if ($response->status == Auth_OpenID_SUCCESS) {
     $teams_resp   = new Auth_OpenID_TeamsResponse($response);
@@ -258,7 +291,7 @@ function openid_teams_assign_on_login($username, $password='') {
 
 /**
  * Clear the user's roles assigned by openid teams on logout if possible
- * 
+ *
  * It isn't guaranteed that users will use the logout button but this will
  * remove the roles from the admin interface if they do.
  */
@@ -268,7 +301,7 @@ function openid_teams_assign_on_logout() {
 
 /**
  * Remove roles from the user which were assigned on last login by openid teams
- * 
+ *
  * @param object $user
  * @return object The amended $user object
  */
