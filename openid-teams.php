@@ -121,6 +121,12 @@ function openid_teams_page() {
   openid_teams_process_teams_form();
   $all_trusted = openid_teams_get_trust_list();
   $servers = array('-1' => __('Any server', 'openid-teams'));
+  $trusted_servers = openid_get_server_list();
+  foreach ($trusted_servers as $server) {
+    if ($server->listtype != OPENID_SERVER_POLICY_DENY) {
+      $servers[$server->id] = $server->server;
+    }
+  }
   $roles = new WP_Roles();
   $i = 0;
   ?>
