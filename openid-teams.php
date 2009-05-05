@@ -360,8 +360,16 @@ function get_team_role_ids($team, $server) {
     }
   }
   if (isset($mapped_roles[$team])) {
+    $all_trusted_servers = openid_get_server_list();
     foreach ($mapped_roles[$team] as $map) {
-      if ($map->server == -1 || true === fnmatch($map->server, $server->server_url)) {
+      $server_url = '';
+      foreach ($all_trusted_servers as $trusted_server) {
+        if ($trusted_server->id == $map->server) {
+          $server_url = $trusted_server->server;
+          break;
+        }
+      }
+      if ($map->server == -1 || true === fnmatch($server_url, $server)) {
         $map_ids[] = $map->id;
       }
     }
