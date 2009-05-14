@@ -377,4 +377,13 @@ function get_team_role_ids($team, $server) {
   return $map_ids;
 }
 
+/**
+ * This is a placeholder function to replace removed functionality from the openid plugin
+ *
+ * @return array An empty array to prevent breakage
+ */
+function openid_get_server_list() {
+  return array();
+}
+
 ?>
