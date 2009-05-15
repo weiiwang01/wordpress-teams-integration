@@ -18,10 +18,10 @@ add_action('wp_logout', 'openid_teams_assign_on_logout');
  * Add the teams admin page to the main admin menu
  */
 function openid_teams_admin_panels() {
-	// trusted servers page
-	$hookname = add_options_page(__('OpenID teams', 'openid-teams'),
-	                             __('OpenID Teams', 'openid-teams'), 8,
-	                              'openid-teams', 'openid_teams_page' );
+  // trusted servers page
+  $hookname = add_options_page(__('OpenID teams', 'openid-teams'),
+                               __('OpenID Teams', 'openid-teams'), 8,
+                                'openid-teams', 'openid_teams_page' );
 }
 
 /**
@@ -32,15 +32,15 @@ function openid_teams_admin_panels() {
  * @param string $server The server url to match against the openid provider's endpoint
  */
 function openid_add_trust_map($team, $role, $server) {
-	$list = openid_teams_get_trust_list();
-	$new_index = (sizeof($list) > 0) ? max(array_keys($list)) + 1 : 1;
-	$new_item = null;
-	$new_item->id = $new_index;
-	$new_item->team = $team;
-	$new_item->role = $role;
-	$new_item->server = $server;
-	$list[$new_index] = $new_item;
-	openid_teams_update_trust_list($list);
+  $list = openid_teams_get_trust_list();
+  $new_index = (sizeof($list) > 0) ? max(array_keys($list)) + 1 : 1;
+  $new_item = null;
+  $new_item->id = $new_index;
+  $new_item->team = $team;
+  $new_item->role = $role;
+  $new_item->server = $server;
+  $list[$new_index] = $new_item;
+  openid_teams_update_trust_list($list);
 }
 
 /**
@@ -51,9 +51,9 @@ function openid_add_trust_map($team, $role, $server) {
  * @param array $list
  */
 function openid_teams_update_trust_list($list) {
-	if (is_array($list)) {
-		update_option('openid_teams_trust_list', $list);
-	}
+  if (is_array($list)) {
+    update_option('openid_teams_trust_list', $list);
+  }
 }
 
 /**
@@ -68,18 +68,18 @@ function openid_teams_update_trust_list($list) {
  *     -> server   - The server url to match against the openid provider's endpoint
  *   ),
  *   [2] => stdObject(
- * 		... etc ...
+ *     ... etc ...
  * )
  *
  * @return array
  */
 function openid_teams_get_trust_list() {
-	$list = get_option('openid_teams_trust_list');
-	if ($list === false) {
-		$list = array();
-		openid_teams_update_trust_list($list);
-	}
-	return $list;
+  $list = get_option('openid_teams_trust_list');
+  if ($list === false) {
+    $list = array();
+    openid_teams_update_trust_list($list);
+  }
+  return $list;
 }
 
 /**
@@ -268,7 +268,7 @@ function display_openid_teams_roles_form() {
   $roles = new WP_Roles();
   $i = 0;
   ?>
-	<table width="100%">
+  <table width="100%">
     <tr>
       <th style="text-align:left;"><?php _e('Team', 'openid-teams') ?></th>
       <th style="text-align:left;"><?php _e('Role', 'openid-teams') ?></th>
@@ -344,7 +344,7 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
   restore_include_path();
   $teams = get_teams_for_endpoint($auth_request->endpoint->server_url);
   $extensions[] = new Auth_OpenID_TeamsRequest($teams);
-	return $extensions;
+  return $extensions;
 }
 
 /**
@@ -412,14 +412,14 @@ function openid_teams_assign_on_login($username, $password='') {
   global $openid_teams;
   $user = restore_old_roles(new WP_User($username));
   if ($openid_teams) {
-  	$existing_roles = array_keys($user->caps);
-  	$openid_assigned_roles = array();
+    $existing_roles = array_keys($user->caps);
+    $openid_assigned_roles = array();
     $all_teams = openid_teams_get_trust_list();
     foreach ($openid_teams as $id) {
       $role = $all_teams[$id]->role;
       if (!in_array($role, $existing_roles) && !isset($user->caps[$role])) {
-      	$user->add_role($role);
-      	$openid_assigned_roles[] = $role;
+        $user->add_role($role);
+        $openid_assigned_roles[] = $role;
       }
     }
     update_usermeta($user->ID, 'openid_assigned_roles', $openid_assigned_roles);
