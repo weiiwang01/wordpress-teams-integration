@@ -201,19 +201,28 @@ function in_trusted_servers($server) {
 }
 
 function display_openid_teams_restricted_access_form() {
+  openid_teams_teams_process_restricted_access_form();
+  $allowed_team_name = get_option("openid_teams_allowed_launchpad_team_name");
   ?>
   <table class="form-table">
     <tbody>
       <tr valign="top">
         <th scope="row"><label for=""><?php echo _e('Restricted team', 'openid-teams') ?></label></th>
         <td>
-          <input type="text" name="restricted_team_name" id="restricted_team_name" size="30" />
+          <input type="text" name="restricted_team_name" id="restricted_team_name" size="30" value="<?php echo $allowed_team_name ?>" />
           <p>Name of Launchpad team user must be member to be able to access this site.</p>
         </td>                    
       </tr>
     </tbody>
   </table>
   <?php
+}
+
+function openid_teams_teams_process_restricted_access_form() {
+  if (isset($_POST['restricted_team_name'])) {
+    $team_name = $_POST['restricted_team_name'];
+    update_option('openid_teams_allowed_launchpad_team_name', $team_name);
+  }
 }
 
 /**
