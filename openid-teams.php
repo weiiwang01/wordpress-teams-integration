@@ -8,6 +8,8 @@ Author: Stuart Metcalfe
 Author URI: http://launchpad.net/~stuartmetcalfe
 */
 
+define ('ALLOWED_TEAM', 'canonical-isd-hackers');
+
 add_action('admin_menu', 'openid_teams_admin_panels');
 add_filter('openid_auth_request_extensions',
            'openid_teams_add_extenstion', 10, 2);
@@ -90,12 +92,17 @@ function openid_teams_page() {
   <div class="wrap">
     <form method="post">
       <h2><?php _e('OpenID Teams', 'openid-teams') ?></h2>
-      <p><a href="?page=openid-teams&amp;form=roles"><?php _e('Roles', 'openid-teams') ?></a> |
+      <p>
+      <a href="?page=openid-teams&amp;form=restricted"><?php _e('Restricted access', 'openid-teams') ?></a> |
+      <a href="?page=openid-teams&amp;form=roles"><?php _e('Roles', 'openid-teams') ?></a> |
       <a href="?page=openid-teams&amp;form=servers"><?php _e('Servers', 'openid-teams') ?></a></p>
   <?php
 
   $form = (isset($_REQUEST['form'])) ? $_REQUEST['form'] : '';
   switch ($form) {
+  case 'restricted':
+    display_openid_teams_restricted_access_form();
+    break;
   case 'servers':
     display_openid_teams_servers_form();
     break;
@@ -107,7 +114,9 @@ function openid_teams_page() {
 
   ?>
       <?php wp_nonce_field('openid-teams_update'); ?>
-      <input type="submit" name="teams_submit" value="<?php _e('Save changes') ?>" />
+      <p class="submit">
+        <input type="submit" name="teams_submit" value="<?php _e('Save changes') ?>" />
+      </p>
     </form>
   </div>
   <?php
@@ -189,6 +198,22 @@ function in_trusted_servers($server) {
     }
   }
   return false;
+}
+
+function display_openid_teams_restricted_access_form() {
+  ?>
+  <table class="form-table">
+    <tbody>
+      <tr valign="top">
+        <th scope="row"><label for=""><?php echo _e('Restricted team', 'openid-teams') ?></label></th>
+        <td>
+          <input type="text" name="restricted_team_name" id="restricted_team_name" size="30" />
+          <p>Name of Launchpad team user must be member to be able to access this site.</p>
+        </td>                    
+      </tr>
+    </tbody>
+  </table>
+  <?php
 }
 
 /**
@@ -343,6 +368,9 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
   require_once 'teams-extension.php';
   restore_include_path();
   $teams = get_teams_for_endpoint($auth_request->endpoint->server_url);
+  if (defined('ALLOWED_TEAM') && !in_array(ALLOWED_TEAM, $teams)) {
+    $teams[] = ALLOWED_TEAM;
+  }
   $extensions[] = new Auth_OpenID_TeamsRequest($teams);
   return $extensions;
 }
@@ -399,6 +427,9 @@ function openid_teams_finish_auth($identity_url) {
     $raw_teams    = $teams_resp->getTeams();
     $endpoint     = $response->endpoint;
     $openid_teams = get_approved_team_mappings($raw_teams, $endpoint->server_url);
+    if (defined('ALLOWED_TEAM') && !in_array(ALLOWED_TEAM, $raw_teams)) {
+      exit('Permission denied!');
+    }
   }
 }
 
