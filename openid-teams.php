@@ -469,7 +469,10 @@ function openid_teams_finish_auth($identity_url) {
     if (openid_teams_is_restricted_access_enabled()) {
       $team = openid_teams_get_restricted_team_name();
       if (!in_array($team, $raw_teams)) {
-        $url = get_option('siteurl') . '/wp-login.php?openid_error=' . urlencode('Permission denied.');
+        $url = get_option('siteurl') . '/wp-login.php';
+        session_start();
+        $_SESSION['openid_error'] = 'Permission denied.';
+        session_commit();
         wp_safe_redirect($url);
         exit;
       }
