@@ -202,27 +202,48 @@ function in_trusted_servers($server) {
 
 function display_openid_teams_restricted_access_form() {
   openid_teams_teams_process_restricted_access_form();
-  $allowed_team_name = get_option("openid_teams_allowed_launchpad_team_name");
+  $allowed_team_name = get_option('openid_teams_allowed_team_name');
+  $enable_allowed_team = get_option('openid_teams_enable_allowed_team')
   ?>
   <table class="form-table">
     <tbody>
       <tr valign="top">
         <th scope="row"><label for=""><?php echo _e('Restricted team', 'openid-teams') ?></label></th>
         <td>
-          <input type="text" name="restricted_team_name" id="restricted_team_name" size="30" value="<?php echo $allowed_team_name ?>" />
-          <p>Name of Launchpad team user must be member to be able to access this site.</p>
+          <label for="enable_restricted_team">
+            <input type="checkbox" name="enable_restricted_team" 
+                   id="enable_restricted_team" <?php echo $enable_allowed_team ? 'checked="checked"' : '' ?> /> 
+            Limit access only to members of the team bellow
+          </label>
+          <br />
+          <input type="text" name="restricted_team_name" 
+                 id="restricted_team_name" size="30" value="<?php echo $allowed_team_name ?>"
+               <?php if (!$enable_allowed_team) { echo 'disabled="disabled"'; } ?>/>
+          <p>Name of team user must be member to be able to access this site.</p>
         </td>                    
       </tr>
     </tbody>
   </table>
+  <script launguage="javascript">
+    jQuery('#enable_restricted_team').click(function () {
+        var c = jQuery(this); 
+        jQuery('#restricted_team_name').attr('disabled', c.attr('checked') ? '' : 'disabled'); 
+      });
+  </script>
   <?php
 }
 
 function openid_teams_teams_process_restricted_access_form() {
   if (isset($_POST['restricted_team_name'])) {
     $team_name = $_POST['restricted_team_name'];
-    update_option('openid_teams_allowed_launchpad_team_name', $team_name);
+    update_option('openid_teams_allowed_team_name', $team_name);
   }
+  if (isset($_POST['enable_restricted_team'])) {
+    $enable = true;
+  } else {
+    $enable = false;
+  }
+  update_option('openid_teams_enable_allowed_team', $enable);
 }
 
 /**
