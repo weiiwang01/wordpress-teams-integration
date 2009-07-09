@@ -8,8 +8,6 @@ Author: Stuart Metcalfe
 Author URI: http://launchpad.net/~stuartmetcalfe
 */
 
-define ('ALLOWED_TEAM', 'canonical-isd-hackers');
-
 add_action('admin_menu', 'openid_teams_admin_panels');
 add_filter('openid_auth_request_extensions',
            'openid_teams_add_extenstion', 10, 2);
@@ -220,7 +218,7 @@ function display_openid_teams_restricted_access_form() {
           <input type="text" name="restricted_team_name" 
                  id="restricted_team_name" size="30" 
                  value="<?php echo openid_teams_get_restricted_team_name(); ?>"
-               <?php if (!$enabled_allowed_team) { echo 'disabled="disabled"'; } ?>/>
+              <?php echo $enabled_allowed_team ? '' : 'disabled="disabled"'; ?>/>
           <p><?php echo _e('Name of team user must be member to be able to access this site.'); ?></p>
         </td>                    
       </tr>
@@ -471,7 +469,9 @@ function openid_teams_finish_auth($identity_url) {
     if (openid_teams_is_restricted_access_enabled()) {
       $team = openid_teams_get_restricted_team_name();
       if (!in_array($team, $raw_teams)) {
-        exit('Permission denied!');
+        $url = get_option('siteurl') . '/wp-login.php?openid_error=' . urlencode('Permission denied.');
+        wp_safe_redirect($url);
+        exit;
       }
     }
   }
