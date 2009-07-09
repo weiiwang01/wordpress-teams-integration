@@ -93,9 +93,10 @@ function openid_teams_page() {
     <form method="post">
       <h2><?php _e('OpenID Teams', 'openid-teams') ?></h2>
       <p>
-      <a href="?page=openid-teams&amp;form=restricted"><?php _e('Restricted access', 'openid-teams') ?></a> |
-      <a href="?page=openid-teams&amp;form=roles"><?php _e('Roles', 'openid-teams') ?></a> |
-      <a href="?page=openid-teams&amp;form=servers"><?php _e('Servers', 'openid-teams') ?></a></p>
+        <a href="?page=openid-teams&amp;form=roles"><?php _e('Roles', 'openid-teams') ?></a> |
+        <a href="?page=openid-teams&amp;form=servers"><?php _e('Servers', 'openid-teams') ?></a> |
+        <a href="?page=openid-teams&amp;form=restricted"><?php _e('Restrict access', 'openid-teams') ?></a>
+      </p>
   <?php
 
   $form = (isset($_REQUEST['form'])) ? $_REQUEST['form'] : '';
@@ -202,8 +203,7 @@ function in_trusted_servers($server) {
 
 function display_openid_teams_restricted_access_form() {
   openid_teams_teams_process_restricted_access_form();
-  $allowed_team_name = get_option('openid_teams_allowed_team_name');
-  $enable_allowed_team = get_option('openid_teams_enable_allowed_team')
+  $enabled_allowed_team = openid_teams_is_restricted_access_enabled();
   ?>
   <table class="form-table">
     <tbody>
@@ -212,14 +212,16 @@ function display_openid_teams_restricted_access_form() {
         <td>
           <label for="enable_restricted_team">
             <input type="checkbox" name="enable_restricted_team" 
-                   id="enable_restricted_team" <?php echo $enable_allowed_team ? 'checked="checked"' : '' ?> /> 
-            Limit access only to members of the team bellow
+                   id="enable_restricted_team" 
+                   <?php echo $enabled_allowed_team ? 'checked="checked"' : '' ?> /> 
+            <?php echo _e('Limit access only to members of the team'); ?>
           </label>
           <br />
           <input type="text" name="restricted_team_name" 
-                 id="restricted_team_name" size="30" value="<?php echo $allowed_team_name ?>"
-               <?php if (!$enable_allowed_team) { echo 'disabled="disabled"'; } ?>/>
-          <p>Name of team user must be member to be able to access this site.</p>
+                 id="restricted_team_name" size="30" 
+                 value="<?php echo openid_teams_get_restricted_team_name(); ?>"
+               <?php if (!$enabled_allowed_team) { echo 'disabled="disabled"'; } ?>/>
+          <p><?php echo _e('Name of team user must be member to be able to access this site.'); ?></p>
         </td>                    
       </tr>
     </tbody>
@@ -233,17 +235,20 @@ function display_openid_teams_restricted_access_form() {
   <?php
 }
 
+function openid_teams_is_restricted_access_enabled() {
+  return get_option('openid_teams_enable_allowed_team');
+}
+
+function openid_teams_get_restricted_team_name() {
+  return get_option('openid_teams_allowed_team_name');
+}
+
 function openid_teams_teams_process_restricted_access_form() {
   if (isset($_POST['restricted_team_name'])) {
     $team_name = $_POST['restricted_team_name'];
     update_option('openid_teams_allowed_team_name', $team_name);
+    update_option('openid_teams_enable_allowed_team', isset($_POST['enable_restricted_team']));
   }
-  if (isset($_POST['enable_restricted_team'])) {
-    $enable = true;
-  } else {
-    $enable = false;
-  }
-  update_option('openid_teams_enable_allowed_team', $enable);
 }
 
 /**
@@ -398,9 +403,14 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
   require_once 'teams-extension.php';
   restore_include_path();
   $teams = get_teams_for_endpoint($auth_request->endpoint->server_url);
-  if (defined('ALLOWED_TEAM') && !in_array(ALLOWED_TEAM, $teams)) {
-    $teams[] = ALLOWED_TEAM;
+
+  if (openid_teams_is_restricted_access_enabled()) {
+    $team = openid_teams_get_restricted_team_name();
+    if (!in_array($team, $teams)) {
+      $teams[] = $team;
+    }
   }
+
   $extensions[] = new Auth_OpenID_TeamsRequest($teams);
   return $extensions;
 }
@@ -457,8 +467,12 @@ function openid_teams_finish_auth($identity_url) {
     $raw_teams    = $teams_resp->getTeams();
     $endpoint     = $response->endpoint;
     $openid_teams = get_approved_team_mappings($raw_teams, $endpoint->server_url);
-    if (defined('ALLOWED_TEAM') && !in_array(ALLOWED_TEAM, $raw_teams)) {
-      exit('Permission denied!');
+
+    if (openid_teams_is_restricted_access_enabled()) {
+      $team = openid_teams_get_restricted_team_name();
+      if (!in_array($team, $raw_teams)) {
+        exit('Permission denied!');
+      }
     }
   }
 }
