@@ -228,22 +228,22 @@ function display_openid_teams_restricted_access_form() {
         <th scope="row"><label for=""><?php echo _e('Restricted team', 'openid-teams') ?></label></th>
         <td>
           <label for="enable_restricted_teams">
-            <input type="checkbox" name="enable_restricted_teams" 
-                   id="enable_restricted_teams" 
-                   <?php echo $enabled_allowed_team ? 'checked="checked"' : '' ?> /> 
+            <input type="checkbox" name="enable_restricted_teams"
+                   id="enable_restricted_teams"
+                   <?php echo $enabled_allowed_team ? 'checked="checked"' : '' ?> />
             <?php _e('Limit access to members of known teams'); ?>
           </label>
           <br />
           <small>
-            Currently known teams: 
+            Currently known teams:
             <?php echo implode(', ', get_all_local_teams()); ?>
           </small>
           <br />
           <p><?php _e('Comma-separated list of additional teams to allow access'); ?></p>
-          <input type="text" name="restricted_teams" 
-                 id="restricted_teams" size="30" 
+          <input type="text" name="restricted_teams"
+                 id="restricted_teams" size="30"
                  value="<?php echo implode(', ', openid_teams_get_restricted_teams()); ?>" />
-        </td>                    
+        </td>
       </tr>
     </tbody>
   </table>
@@ -252,8 +252,8 @@ function display_openid_teams_restricted_access_form() {
       jQuery('#restricted_teams').attr('disabled', 'disabled');
     <?php } ?>
     jQuery('#enable_restricted_teams').click(function () {
-        var c = jQuery(this); 
-        jQuery('#restricted_teams').attr('disabled', c.attr('checked') ? '' : 'disabled'); 
+        var c = jQuery(this);
+        jQuery('#restricted_teams').attr('disabled', c.attr('checked') ? '' : 'disabled');
       });
   </script>
   <?php
@@ -270,7 +270,7 @@ function openid_teams_is_restricted_access_enabled() {
 
 /**
  * Retrieve list of teams which are eligible to access this blog
- * 
+ *
  * @return array
  */
 function openid_teams_get_restricted_teams() {
@@ -628,6 +628,4 @@ function get_team_role_ids($team, $server) {
   }
   return $map_ids;
 }
-
-?>
 
