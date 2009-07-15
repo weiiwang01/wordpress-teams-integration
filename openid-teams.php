@@ -275,7 +275,7 @@ function openid_teams_is_restricted_access_enabled() {
  */
 function openid_teams_get_restricted_teams() {
   $result = array();
-  foreach (explode(', ', get_option('openid_teams_allowed_teams')) as $team) {
+  foreach (explode(',', get_option('openid_teams_allowed_teams')) as $team) {
     $result[] = trim($team);
   }
   return $result;
