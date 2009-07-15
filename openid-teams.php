@@ -285,7 +285,7 @@ function openid_teams_get_restricted_teams() {
  * Process form for changing restriction setting
  */
 function openid_teams_teams_process_restricted_access_form() {
-  if (isset($_GET['form']) && $_GET['form'] == 'restricted' && isset($_POST)) {
+  if (isset($_GET['form']) && $_GET['form'] == 'restricted' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['restricted_teams'])) {
       $teams = $_POST['restricted_teams'];
       update_option('openid_teams_allowed_teams', $teams);
