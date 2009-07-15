@@ -202,7 +202,7 @@ function openid_teams_update_trusted_servers($all_servers) {
 }
 
 /**
- * Check if given servver is on trusted server list
+ * Check if given server is on trusted server list
  *
  * @param string $server
  */
@@ -269,7 +269,7 @@ function openid_teams_is_restricted_access_enabled() {
 }
 
 /**
- * Retrive list of teams which are eligible to access this blog
+ * Retrieve list of teams which are eligible to access this blog
  * 
  * @return array
  */
@@ -630,3 +630,4 @@ function get_team_role_ids($team, $server) {
 }
 
 ?>
+
