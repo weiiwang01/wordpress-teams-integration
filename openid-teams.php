@@ -121,6 +121,12 @@ function openid_teams_page() {
   <?php
 }
 
+function openid_teams_add_error($error) {
+        @session_start();
+        $_SESSION['openid_error'] = $error;;
+        session_commit();
+}
+
 /**
  *
  */
@@ -212,14 +218,19 @@ function display_openid_teams_restricted_access_form() {
             <input type="checkbox" name="enable_restricted_team" 
                    id="enable_restricted_team" 
                    <?php echo $enabled_allowed_team ? 'checked="checked"' : '' ?> /> 
-            <?php echo _e('Limit access only to members of the team'); ?>
+            <?php _e('Limit access to members of known teams'); ?>
           </label>
           <br />
-          <input type="text" name="restricted_team_name" 
-                 id="restricted_team_name" size="30" 
-                 value="<?php echo openid_teams_get_restricted_team_name(); ?>"
+          <small>
+            Currently known teams: 
+            <?php echo implode(', ', get_all_local_teams()); ?>
+          </small>
+          <br />
+          <p><?php _e('Comma-separated list of additional teams to allow access'); ?></p>
+          <input type="text" name="restricted_teams" 
+                 id="restricted_teams" size="30" 
+                 value="<?php echo implode(', ', openid_teams_get_restricted_teams()); ?>"
               <?php echo $enabled_allowed_team ? '' : 'disabled="disabled"'; ?>/>
-          <p><?php echo _e('Name of team user must be member to be able to access this site.'); ?></p>
         </td>                    
       </tr>
     </tbody>
@@ -237,14 +248,18 @@ function openid_teams_is_restricted_access_enabled() {
   return get_option('openid_teams_enable_allowed_team');
 }
 
-function openid_teams_get_restricted_team_name() {
-  return get_option('openid_teams_allowed_team_name');
+function openid_teams_get_restricted_teams() {
+  $result = array();
+  foreach (explode(', ', get_option('openid_teams_allowed_teams')) as $team) {
+    $result[] = trim($team);
+  }
+  return $result;
 }
 
 function openid_teams_teams_process_restricted_access_form() {
-  if (isset($_POST['restricted_team_name'])) {
-    $team_name = $_POST['restricted_team_name'];
-    update_option('openid_teams_allowed_team_name', $team_name);
+  if (isset($_POST['restricted_teams'])) {
+    $teams = $_POST['restricted_teams'];
+    update_option('openid_teams_allowed_teams', $teams);
     update_option('openid_teams_enable_allowed_team', isset($_POST['enable_restricted_team']));
   }
 }
@@ -403,9 +418,11 @@ function openid_teams_add_extenstion($extensions, $auth_request) {
   $teams = get_teams_for_endpoint($auth_request->endpoint->server_url);
 
   if (openid_teams_is_restricted_access_enabled()) {
-    $team = openid_teams_get_restricted_team_name();
-    if (!in_array($team, $teams)) {
-      $teams[] = $team;
+    $restricted_teams = openid_teams_get_restricted_teams();
+    foreach ($restricted_teams as $team) {
+      if (!in_array($team, $teams)) {
+        $teams[] = $team;
+      }
     }
   }
 
@@ -467,12 +484,12 @@ function openid_teams_finish_auth($identity_url) {
     $openid_teams = get_approved_team_mappings($raw_teams, $endpoint->server_url);
 
     if (openid_teams_is_restricted_access_enabled()) {
-      $team = openid_teams_get_restricted_team_name();
-      if (!in_array($team, $raw_teams)) {
+      $teams = openid_teams_get_restricted_teams();
+      $teams = array_merge($teams, get_all_local_teams());
+      $intersection = array_intersect($teams, $raw_teams);
+      if (count($intersection) == 0) {
         $url = get_option('siteurl') . '/wp-login.php';
-        session_start();
-        $_SESSION['openid_error'] = 'Permission denied.';
-        session_commit();
+        openid_teams_add_error(__('Permission denied.', 'openid-teams'));
         wp_safe_redirect($url);
         exit;
       }
