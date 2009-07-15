@@ -121,6 +121,11 @@ function openid_teams_page() {
   <?php
 }
 
+/**
+ * Pass message to openid error display, it will be displayed on top of login form
+ *
+ * @param string $error
+ */
 function openid_teams_add_error($error) {
         @session_start();
         $_SESSION['openid_error'] = $error;;
@@ -196,6 +201,11 @@ function openid_teams_update_trusted_servers($all_servers) {
   }
 }
 
+/**
+ * Check if given servver is on trusted server list
+ *
+ * @param string $server
+ */
 function in_trusted_servers($server) {
   foreach (openid_get_server_list() as $trusted) {
     if ($server == $trusted) {
@@ -205,6 +215,9 @@ function in_trusted_servers($server) {
   return false;
 }
 
+/**
+ * Process and display form for setting up restricted access to blog
+ */
 function display_openid_teams_restricted_access_form() {
   openid_teams_teams_process_restricted_access_form();
   $enabled_allowed_team = openid_teams_is_restricted_access_enabled();
@@ -214,9 +227,9 @@ function display_openid_teams_restricted_access_form() {
       <tr valign="top">
         <th scope="row"><label for=""><?php echo _e('Restricted team', 'openid-teams') ?></label></th>
         <td>
-          <label for="enable_restricted_team">
-            <input type="checkbox" name="enable_restricted_team" 
-                   id="enable_restricted_team" 
+          <label for="enable_restricted_teams">
+            <input type="checkbox" name="enable_restricted_teams" 
+                   id="enable_restricted_teams" 
                    <?php echo $enabled_allowed_team ? 'checked="checked"' : '' ?> /> 
             <?php _e('Limit access to members of known teams'); ?>
           </label>
@@ -229,25 +242,37 @@ function display_openid_teams_restricted_access_form() {
           <p><?php _e('Comma-separated list of additional teams to allow access'); ?></p>
           <input type="text" name="restricted_teams" 
                  id="restricted_teams" size="30" 
-                 value="<?php echo implode(', ', openid_teams_get_restricted_teams()); ?>"
-              <?php echo $enabled_allowed_team ? '' : 'disabled="disabled"'; ?>/>
+                 value="<?php echo implode(', ', openid_teams_get_restricted_teams()); ?>" />
         </td>                    
       </tr>
     </tbody>
   </table>
   <script launguage="javascript">
-    jQuery('#enable_restricted_team').click(function () {
+    <?php if (!$enabled_allowed_team) { ?>
+      jQuery('#restricted_teams').attr('disabled', 'disabled');
+    <?php } ?>
+    jQuery('#enable_restricted_teams').click(function () {
         var c = jQuery(this); 
-        jQuery('#restricted_team_name').attr('disabled', c.attr('checked') ? '' : 'disabled'); 
+        jQuery('#restricted_teams').attr('disabled', c.attr('checked') ? '' : 'disabled'); 
       });
   </script>
   <?php
 }
 
+/**
+ * Check if option for restricting access based on openid teams is turned on
+ *
+ * @return boolean
+ */
 function openid_teams_is_restricted_access_enabled() {
   return get_option('openid_teams_enable_allowed_team');
 }
 
+/**
+ * Retrive list of teams which are eligible to access this blog
+ * 
+ * @return array
+ */
 function openid_teams_get_restricted_teams() {
   $result = array();
   foreach (explode(', ', get_option('openid_teams_allowed_teams')) as $team) {
@@ -256,11 +281,16 @@ function openid_teams_get_restricted_teams() {
   return $result;
 }
 
+/**
+ * Process form for changing restriction setting
+ */
 function openid_teams_teams_process_restricted_access_form() {
-  if (isset($_POST['restricted_teams'])) {
-    $teams = $_POST['restricted_teams'];
-    update_option('openid_teams_allowed_teams', $teams);
-    update_option('openid_teams_enable_allowed_team', isset($_POST['enable_restricted_team']));
+  if (isset($_GET['form']) && $_GET['form'] == 'restricted') {
+    if (isset($_POST['restricted_teams'])) {
+      $teams = $_POST['restricted_teams'];
+      update_option('openid_teams_allowed_teams', $teams);
+    }
+    update_option('openid_teams_enable_allowed_team', isset($_POST['enable_restricted_teams']));
   }
 }
 
