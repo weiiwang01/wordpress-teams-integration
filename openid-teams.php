@@ -179,13 +179,19 @@ function delete_server_from_trusted($id, $trusted_servers = null) {
   if (is_null($trusted_servers)) {
     $trusted_servers = openid_get_server_list();
   }
-  unset($trusted_servers[$id]);
-  openid_teams_update_trusted_servers($trusted_servers);
   $all_trust_maps = openid_teams_get_trust_list();
+  $role_found = false;
   foreach ($all_trust_maps as $map_id => $trust_map) {
     if ($trust_map->server == $id) {
-      $all_trust_maps[$map_id]->server = -1;
+      $role_found = true;
+      break;
     }
+  }
+  if ($role_found) {
+    print '<div id="message" class="error"><p>'.__("You cannot remove a server that has roles associated with it.").'</p></div>';
+  } else {
+    unset($trusted_servers[$id]);
+    openid_teams_update_trusted_servers($trusted_servers);
   }
   openid_teams_update_trust_list($all_trust_maps);
 }
