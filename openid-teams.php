@@ -194,6 +194,12 @@ function is_server_bound($id) {
   return $role_found;
 }
 
+/**
+ * Delete given server from the list of trusted servers
+ *
+ * @param int $id
+ * @param array $trusted_servers
+ */
 function delete_server_from_trusted($id, $trusted_servers = null) {
   if (is_null($trusted_servers)) {
     $trusted_servers = openid_get_server_list();
@@ -207,6 +213,7 @@ function delete_server_from_trusted($id, $trusted_servers = null) {
     openid_teams_update_trust_list($all_trust_maps);
   }
 }
+
 /**
  * Get the list of trusted servers
  *
