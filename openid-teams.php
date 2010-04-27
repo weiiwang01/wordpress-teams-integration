@@ -175,10 +175,12 @@ function openid_teams_process_servers_form() {
   }
 }
 
-function delete_server_from_trusted($id, $trusted_servers = null) {
-  if (is_null($trusted_servers)) {
-    $trusted_servers = openid_get_server_list();
-  }
+/**
+ * Check if given server is bound to a role.
+ *
+ * @return boolean
+ */
+function is_server_bound($id) {
   $all_trust_maps = openid_teams_get_trust_list();
   $role_found = false;
   foreach ($all_trust_maps as $map_id => $trust_map) {
@@ -187,13 +189,21 @@ function delete_server_from_trusted($id, $trusted_servers = null) {
       break;
     }
   }
-  if ($role_found) {
+  return $role_found;
+}
+
+function delete_server_from_trusted($id, $trusted_servers = null) {
+  if (is_null($trusted_servers)) {
+    $trusted_servers = openid_get_server_list();
+  }
+  if (is_server_bound($id)) {
     print '<div id="message" class="error"><p>'.__("You cannot remove a server that has roles associated with it.").'</p></div>';
   } else {
+    $all_trust_maps = openid_teams_get_trust_list();
     unset($trusted_servers[$id]);
     openid_teams_update_trusted_servers($trusted_servers);
+    openid_teams_update_trust_list($all_trust_maps);
   }
-  openid_teams_update_trust_list($all_trust_maps);
 }
 /**
  * Get the list of trusted servers
@@ -336,7 +346,7 @@ function display_openid_teams_servers_form() {
     ?>
     <tr>
       <td><?php print htmlentities($server); ?></td>
-      <td><input type="checkbox" name="delete[<?php print $id ?>]" value="1" /></td>
+      <td style="text-align:center;"><?php if (!is_server_bound($id)): ?><input type="checkbox" name="delete[<?php print $id ?>]" value="1" /><?php else: print __("(associated with a role)"); endif; ?></td>
     </tr>
     <?php
     }
