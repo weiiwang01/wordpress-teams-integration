@@ -176,7 +176,9 @@ function openid_teams_process_servers_form() {
 }
 
 /**
- * Check if given server is bound to a role.
+ * Check if given server is bound to a role
+ *
+ * @param int $id Internal ID of the server to be queried
  *
  * @return boolean
  */
@@ -239,6 +241,8 @@ function openid_teams_update_trusted_servers($all_servers) {
  * Check if given server is on trusted server list
  *
  * @param string $server
+ *
+ * @return bool
  */
 function in_trusted_servers($server) {
   foreach (openid_get_server_list() as $trusted) {
