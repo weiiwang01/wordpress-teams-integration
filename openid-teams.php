@@ -175,20 +175,45 @@ function openid_teams_process_servers_form() {
   }
 }
 
+/**
+ * Check if given server is bound to a role
+ *
+ * @param int $id Internal ID of the server to be queried
+ *
+ * @return boolean
+ */
+function is_server_bound($id) {
+  $all_trust_maps = openid_teams_get_trust_list();
+  $role_found = false;
+  foreach ($all_trust_maps as $map_id => $trust_map) {
+    if ($trust_map->server == $id) {
+      $role_found = true;
+      break;
+    }
+  }
+  return $role_found;
+}
+
+/**
+ * Delete given server from the list of trusted servers
+ *
+ * @param int $id
+ * @param array $trusted_servers
+ */
 function delete_server_from_trusted($id, $trusted_servers = null) {
   if (is_null($trusted_servers)) {
     $trusted_servers = openid_get_server_list();
   }
-  unset($trusted_servers[$id]);
-  openid_teams_update_trusted_servers($trusted_servers);
-  $all_trust_maps = openid_teams_get_trust_list();
-  foreach ($all_trust_maps as $map_id => $trust_map) {
-    if ($trust_map->server == $id) {
-      $all_trust_maps[$map_id]->server = -1;
-    }
+  if (is_server_bound($id)) {
+    print '<div id="message" class="error"><p>'.__("You cannot remove a server that has roles associated with it.").'</p></div>';
+  } else {
+    $all_trust_maps = openid_teams_get_trust_list();
+    unset($trusted_servers[$id]);
+    openid_teams_update_trusted_servers($trusted_servers);
+    openid_teams_update_trust_list($all_trust_maps);
   }
-  openid_teams_update_trust_list($all_trust_maps);
 }
+
 /**
  * Get the list of trusted servers
  *
@@ -223,6 +248,8 @@ function openid_teams_update_trusted_servers($all_servers) {
  * Check if given server is on trusted server list
  *
  * @param string $server
+ *
+ * @return bool
  */
 function in_trusted_servers($server) {
   foreach (openid_get_server_list() as $trusted) {
@@ -330,7 +357,7 @@ function display_openid_teams_servers_form() {
     ?>
     <tr>
       <td><?php print htmlentities($server); ?></td>
-      <td><input type="checkbox" name="delete[<?php print $id ?>]" value="1" /></td>
+      <td style="text-align:center;"><?php if (!is_server_bound($id)): ?><input type="checkbox" name="delete[<?php print $id ?>]" value="1" /><?php else: print __("(associated with a role)"); endif; ?></td>
     </tr>
     <?php
     }
