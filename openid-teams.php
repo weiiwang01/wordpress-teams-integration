@@ -20,10 +20,11 @@
 
 /*
 Plugin Name: OpenID teams
+Plugin URI: http://launchpad.net/wordpress-teams-integration
 Description: OpenID teams implementation for Wordpress
-Version: 0.1
-Author: Stuart Metcalfe
-Author URI: http://launchpad.net/~stuartmetcalfe
+Version: 1.0
+Author: Canonical ISD
+Author URI: http://launchpad.net/~canonical-isd-hackers
 */
 
 add_action('admin_menu', 'openid_teams_admin_panels');
