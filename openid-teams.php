@@ -545,7 +545,6 @@ function get_all_local_teams() {
  * @param string $identity_url
  */
 function openid_teams_finish_auth($identity_url) {
-  global $openid_teams;
   set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR .
                    get_include_path());
   require_once 'teams-extension.php';
@@ -557,6 +556,8 @@ function openid_teams_finish_auth($identity_url) {
     $raw_teams    = $teams_resp->getTeams();
     $endpoint     = $response->endpoint;
     $openid_teams = get_approved_team_mappings($raw_teams, $endpoint->server_url);
+    $_SESSION['openid_teams'] = $openid_teams;
+    $_SESSION['openid_identity_url'] = $identity_url;
 
     # If restricted teams is enabled, check the list against allowed teams
     if (openid_teams_is_restricted_access_enabled()) {
@@ -570,17 +571,6 @@ function openid_teams_finish_auth($identity_url) {
         exit;
       }
     }
-
-    # Set the user's roles based on the openid teams
-    if (is_numeric($identity_url)) {
-            $user_id = $identity_url;
-    } else {
-            $user_id = get_user_by_openid($identity_url);
-    }
-    if ($user_id) {
-        $user = new WP_User($user_id);
-        openid_teams_assign_roles($user, $openid_teams);
-    }
   }
 }
 
@@ -591,30 +581,30 @@ function openid_teams_finish_auth($identity_url) {
  * @param string $password (Default '')
  */
 function openid_teams_assign_on_login($username, $password='') {
-  global $openid_teams;
-  $user = restore_old_roles(new WP_User($username));
-  openid_teams_assign_roles($user, $openid_teams);
-}
-
-/**
- * Set's a users roles based on a list of openid teams
- *
- * @param object $user
- * @param array $openid_teams
- */
-function openid_teams_assign_roles($user, $openid_teams) {
-  if ($user && $openid_teams) {
-    $existing_roles = array_keys($user->caps);
-    $openid_assigned_roles = array();
-    $all_teams = openid_teams_get_trust_list();
-    foreach ($openid_teams as $id) {
-      $role = $all_teams[$id]->role;
-      if (!in_array($role, $existing_roles) && !isset($user->caps[$role])) {
-        $user->add_role($role);
-        $openid_assigned_roles[] = $role;
+  session_start();
+  $identity_url = $_SESSION['openid_identity_url'];
+  if (is_numeric($identity_url)) {
+    $user_id = $identity_url;
+  } else {
+    $user_id = get_user_by_openid($identity_url);
+  }
+  $openid_teams = $_SESSION['openid_teams'];
+  if ($user_id) {
+    $user = new WP_User($user_id);
+    $user = restore_old_roles($user);
+      if ($user && $openid_teams) {
+        $existing_roles = array_keys($user->caps);
+        $openid_assigned_roles = array();
+        $all_teams = openid_teams_get_trust_list();
+        foreach ($openid_teams as $id) {
+          $role = $all_teams[$id]->role;
+          if (!in_array($role, $existing_roles) && !isset($user->caps[$role])) {
+            $user->add_role($role);
+            $openid_assigned_roles[] = $role;
+          }
+        }
+        update_usermeta($user->ID, 'openid_assigned_roles', $openid_assigned_roles);
       }
-    }
-    update_usermeta($user->ID, 'openid_assigned_roles', $openid_assigned_roles);
   }
 }
 
