@@ -487,10 +487,12 @@ function display_openid_teams_roles_form() {
  * @return array The amended extensions array to pass on
  */
 function openid_teams_add_extenstion($extensions, $auth_request) {
+  $old_include_path = get_include_path();
   set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR .
-                   get_include_path());
+                   $old_include_path);
   require_once 'teams-extension.php';
-  restore_include_path();
+  set_include_path($old_include_path);
+
   $teams = get_teams_for_endpoint($auth_request->endpoint->server_url);
 
   if (openid_teams_is_restricted_access_enabled()) {
@@ -546,10 +548,11 @@ function get_all_local_teams() {
  * @param string $identity_url
  */
 function openid_teams_finish_auth($identity_url, $action) {
+  $old_include_path = get_include_path();
   set_include_path(dirname(__FILE__).'/../openid/' . PATH_SEPARATOR .
-                   get_include_path());
+                   $old_include_path);
   require_once 'teams-extension.php';
-  restore_include_path();
+  set_include_path($old_include_path);
 
   $response = openid_response();
   if ($response->status == Auth_OpenID_SUCCESS) {
