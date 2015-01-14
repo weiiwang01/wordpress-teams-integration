@@ -30,7 +30,7 @@ Author URI: http://launchpad.net/~canonical-isd-hackers
 add_action('admin_menu', 'openid_teams_admin_panels');
 add_filter('openid_auth_request_extensions',
            'openid_teams_add_extenstion', 10, 2);
-add_action('openid_finish_auth', 'openid_teams_finish_auth', 9, 2);
+add_action('openid_finish_auth', 'openid_teams_finish_auth', 11, 2);
 add_action('wp_login', 'openid_teams_assign_on_login');
 add_action('wp_logout', 'openid_teams_assign_on_logout');
 /**
