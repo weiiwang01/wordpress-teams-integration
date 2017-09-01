@@ -32,7 +32,6 @@ add_filter('openid_auth_request_extensions',
            'openid_teams_add_extenstion', 10, 2);
 add_action('openid_finish_auth', 'openid_teams_finish_auth', 9, 2);
 add_action('wp_login', 'openid_teams_assign_on_login');
-add_action('wp_logout', 'openid_teams_assign_on_logout');
 /**
  * Add the teams admin page to the main admin menu
  */
@@ -610,16 +609,6 @@ function openid_teams_assign_on_login($username, $password='') {
         update_usermeta($user->ID, 'openid_assigned_roles', $openid_assigned_roles);
       }
   }
-}
-
-/**
- * Clear the user's roles assigned by openid teams on logout if possible
- *
- * It isn't guaranteed that users will use the logout button but this will
- * remove the roles from the admin interface if they do.
- */
-function openid_teams_assign_on_logout() {
-  restore_old_roles(wp_get_current_user());
 }
 
 /**
