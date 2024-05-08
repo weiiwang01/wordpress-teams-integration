@@ -97,6 +97,13 @@ function openid_teams_get_trust_list() {
     $list = array();
     openid_teams_update_trust_list($list);
   }
+  # trust_map can be an array if the option was updated using the wp-cli and the option was passed as a json
+  # In that case, convert to a stdObject.
+  foreach ($list as $map_id => $trust_map) {
+    if (is_array($trust_map)) {
+      $list[$map_id] = (object) $trust_map;
+    }
+  }
   return $list;
 }
 
