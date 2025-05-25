@@ -122,7 +122,7 @@ class Auth_OpenID_TeamsRequest extends Auth_OpenID_TeamsExtension {
     $this->_teams = $teams;
   }
   
-  function Auth_OpenID_TeamsRequest($teams) {
+  public function __construct($teams) {
     $this->__init($teams);
   }
 }
@@ -158,7 +158,7 @@ class Auth_OpenID_TeamsResponse extends Auth_OpenID_TeamsExtension {
     }
   }
   
-  function Auth_OpenID_TeamsResponse(&$resp, $signed_only=true) {
+  public function __construct($resp, $signed_only=true) {
     $this->__init($resp, $signed_only);
   }
   
